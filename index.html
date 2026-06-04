@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voedselprofiel</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #7bbfaa;
+  --green-dark: #4a9e82;
+  --green-bg: #e8f5f0;
+  --green-badge-bg: #cce8df;
+  --green-sel: #a8d5c2;
+  --red-bg: #fce8e8;
+  --red-border: #e8b0b0;
+  --topbar: #d9d9d9;
+  --grey-light: #f0f0f0;
+  --grey-opt: #d9d9d9;
+  --grey-border: #c8c8c8;
+  --grey-text: #888;
+  --black: #111;
+  --font: 'Inter', sans-serif;
+}
+
+html, body {
+  width: 100%; height: 100%;
+  font-family: var(--font);
+  background: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* ── VIEWPORT SCALER ── */
+.app-wrap {
+  position: relative;
+  background: white;
+  /* 4:3 ratio zoals Figma schermen */
+  width: min(100vw, calc(100vh * 1.365));
+  height: min(100vh, calc(100vw / 1.365));
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+}
+
+/* alles schaalt mee via CSS scale */
+.app-inner {
+  position: absolute;
+  top: 0; left: 0;
+  width: 1366px;
+  height: 1000px;
+  transform-origin: top left;
+}
+
+/* ── SCHERMEN ── */
+.screen {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  background: white;
+}
+.screen.active { display: flex; }
+
+/* ── TOPBAR grijs ── */
+.topbar {
+  background: var(--topbar);
+  height: 88px;
+  flex-shrink: 0;
+}
+
+/* ── CONTENT ── */
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 140px;
+}
+
+/* ── BOTTOM BAR ── */
+.bottombar {
+  height: 100px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 140px;
+}
+
+/* ── PROGRESS DOTS ── */
+.dots {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.dot {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: var(--grey-opt);
+}
+.dot.active {
+  width: 36px;
+  border-radius: 7px;
+  background: var(--grey-opt);
+}
+.dot.done { background: var(--grey-opt); }
+
+/* ── VOLGENDE KNOP ── */
+.btn-volgende {
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 18px 36px;
+  font-family: var(--font);
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 200px;
+  justify-content: space-between;
+  transition: background 0.15s;
+}
+.btn-volgende:hover { background: var(--green-dark); }
+.btn-volgende .arrow { font-size: 22px; }
+
+/* ── PROGRESS BAR ── */
+.prog-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 36px;
+  margin-bottom: 6px;
+}
+.prog-nr { font-size: 18px; color: #444; font-weight: 400; }
+.factor-pill {
+  border: 2px solid var(--green-dark);
+  border-radius: 50px;
+  padding: 6px 20px;
+  font-size: 17px;
+  color: var(--green-dark);
+  font-weight: 400;
+}
+.prog-bar-wrap {
+  height: 8px;
+  background: var(--grey-light);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 40px;
+}
+.prog-bar-fill {
+  height: 100%;
+  background: var(--black);
+  border-radius: 4px;
+}
+
+/* ── VRAAG TEKST ── */
+.vraag-tekst {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--black);
+  margin-bottom: 44px;
+}
+
+/* ── OPTIE BUTTONS ── */
+.opts-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.opts-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+.opt {
+  background: var(--grey-opt);
+  border: 2.5px solid transparent;
+  border-radius: 14px;
+  height: 110px;
+  cursor: pointer;
+  font-family: var(--font);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--black);
+  position: relative;
+  transition: background 0.12s, border-color 0.12s;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
+.opt:hover {
+  background: #c8c8c8;
+}
+.opt.selected {
+  background: var(--green-sel);
+  border-color: var(--green-dark);
+}
+.opt.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 12px; right: 16px;
+  font-size: 20px;
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+/* ── SLIDER ── */
+.slider-section {
+  margin-top: 8px;
+}
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 17px;
+  color: #555;
+  margin-bottom: 16px;
+}
+input[type=range].figma-slider {
+  width: 100%;
+  height: 8px;
+  appearance: none;
+  background: var(--black);
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+}
+input[type=range].figma-slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 28px; height: 28px;
+  background: white;
+  border: 2.5px solid var(--black);
+  border-radius: 5px;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.slider-val {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--green-dark);
+  margin-top: 20px;
+}
+
+/* ── TEXTAREA ── */
+.figma-textarea {
+  width: 100%;
+  border: 2.5px solid var(--black);
+  border-radius: 14px;
+  font-family: var(--font);
+  font-size: 18px;
+  padding: 24px;
+  resize: none;
+  height: 240px;
+  background: white;
+  color: var(--black);
+  outline: none;
+  line-height: 1.6;
+}
+.figma-textarea::placeholder { color: #aaa; }
+
+/* ══════════════════
+   S1: WELKOM
+══════════════════ */
+#s1 .content {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 0;
+}
+.welkom-title {
+  font-size: 52px;
+  font-weight: 700;
+  margin-bottom: 28px;
+  line-height: 1.1;
+}
+.welkom-sub {
+  font-size: 22px;
+  color: #555;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 0 auto 56px;
+  font-weight: 300;
+}
+.btn-start-hier {
+  background: var(--grey-opt);
+  border: none;
+  border-radius: 14px;
+  padding: 22px 60px;
+  font-family: var(--font);
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--black);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  transition: background 0.15s;
+  box-shadow: 0 4px 0 #b0b0b0;
+}
+.btn-start-hier:hover { background: #c8c8c8; }
+#s1 .bottombar { justify-content: center; }
+
+/* ══════════════════
+   S8: LOADER
+══════════════════ */
+#s8 .content {
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.loader-spinner {
+  width: 90px; height: 90px;
+  border: 5px dashed var(--black);
+  border-radius: 50%;
+  animation: spin 1.2s linear infinite;
+  margin-bottom: 44px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loader-title {
+  font-size: 38px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.loader-sub {
+  font-size: 20px;
+  color: #666;
+  text-align: center;
+  margin-bottom: 48px;
+  max-width: 560px;
+}
+.loader-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-self: flex-start;
+  margin-left: 300px;
+}
+.lstep {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 20px;
+  color: #aaa;
+}
+.lstep.done { color: var(--black); }
+.lstep.active { color: var(--green-dark); }
+.lbox {
+  width: 32px; height: 32px;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.lstep.done .lbox { border-color: var(--black); }
+.lstep.done .lbox::after { content: '✓'; font-weight: 700; color: var(--black); }
+.lstep.active .lbox { border-color: var(--green-dark); border-style: dashed; }
+
+/* ══════════════════
+   S9: PROFIEL
+══════════════════ */
+#s9 .content {
+  padding: 0 180px;
+  justify-content: center;
+  gap: 0;
+}
+.profiel-card {
+  border: 2.5px solid var(--black);
+  border-radius: 16px;
+  padding: 36px 40px;
+  margin-bottom: 36px;
+  background: #e8f6f3;
+  box-shadow: 0 5px 0 var(--green);
+}
+.profiel-naam {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.profiel-desc {
+  font-size: 18px;
+  color: #666;
+}
+.profiel-note {
+  font-size: 16px;
+  color: #aaa;
+  text-align: center;
+  margin-top: 12px;
+}
+.profiel-btns {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  margin-top: 28px;
+}
+.btn-naar-dash {
+  background: var(--green);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 18px 36px;
+  font-family: var(--font);
+  font-size: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: background 0.15s;
+}
+.btn-naar-dash:hover { background: var(--green-dark); }
+.btn-opslaan {
+  border: 2px dashed #aaa;
+  border-radius: 12px;
+  padding: 18px 36px;
+  font-family: var(--font);
+  font-size: 20px;
+  color: #aaa;
+  background: transparent;
+  cursor: pointer;
+}
+
+/* ══════════════════
+   S11: DASHBOARD
+══════════════════ */
+#s11 {
+  display: none;
+}
+#s11.active { display: flex; }
+#s11 .topbar { display: none; }
+
+.dash-layout {
+  display: grid;
+  grid-template-columns: 480px 1fr 420px;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* kolom 1: aanbod */
+.dash-aanbod {
+  padding: 40px 36px;
+  border-right: 1px solid #e0e0e0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.dash-col-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.filter-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.ftab {
+  border: 2px solid var(--grey-border);
+  border-radius: 50px;
+  padding: 8px 22px;
+  font-family: var(--font);
+  font-size: 16px;
+  color: var(--black);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.ftab.active {
+  background: var(--grey-opt);
+  border-color: var(--grey-opt);
+  font-weight: 600;
+}
+.dish-card {
+  border: 2px solid var(--grey-border);
+  border-radius: 14px;
+  padding: 20px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  background: white;
+}
+.dish-card.green-card {
+  background: #e8f5ee;
+  border-color: #8ecfb0;
+}
+.dish-card.red-card {
+  background: var(--red-bg);
+  border-color: var(--red-border);
+}
+.dish-name {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.dish-sub {
+  font-size: 14px;
+  color: #777;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dish-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dish-weg {
+  background: none;
+  border: none;
+  font-family: var(--font);
+  font-size: 16px;
+  color: #888;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 0;
+}
+.dish-check {
+  font-size: 28px;
+  color: var(--green-dark);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.add-card {
+  border: 2px dashed var(--grey-border);
+  border-radius: 14px;
+  padding: 20px;
+  text-align: center;
+  font-size: 18px;
+  font-weight: 500;
+  color: #888;
+  cursor: pointer;
+  background: transparent;
+  font-family: var(--font);
+  width: 100%;
+  transition: all 0.12s;
+}
+.add-card:hover { border-color: var(--green-dark); color: var(--green-dark); }
+
+/* kolom 2: profiel */
+.dash-profiel {
+  padding: 40px 40px;
+  border-right: 1px solid #e0e0e0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.realtime-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 2px solid var(--green-dark);
+  border-radius: 50px;
+  padding: 8px 20px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--black);
+  width: fit-content;
+}
+.realtime-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: #2a9d6a;
+  animation: pulse 1.8s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+/* score bars */
+.score-list { display: flex; flex-direction: column; gap: 10px; }
+.score-row { display: flex; align-items: center; gap: 12px; }
+.score-lbl { font-size: 15px; color: #777; width: 90px; flex-shrink: 0; }
+.score-bg { flex: 1; height: 6px; background: #e8e8e8; border-radius: 3px; overflow: hidden; }
+.score-fill { height: 100%; background: #bbb; border-radius: 3px; }
+
+/* kolom 3: chatbot */
+.dash-chat {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chat-head {
+  padding: 32px 32px 20px;
+}
+.chat-head-title {
+  font-size: 32px;
+  font-weight: 700;
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cmsg {
+  border-radius: 14px;
+  padding: 16px 20px;
+  font-size: 16px;
+  line-height: 1.5;
+  max-width: 95%;
+}
+.cmsg.bot {
+  background: #d6ede6;
+  border: 1.5px solid #8ecfb0;
+  align-self: flex-start;
+  border-radius: 4px 14px 14px 14px;
+}
+.cmsg.user {
+  background: #efefef;
+  border: 1.5px solid #ddd;
+  align-self: flex-end;
+  border-radius: 14px 4px 14px 14px;
+}
+.cmsg-lbl {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #666;
+}
+.cmsg.bot .cmsg-lbl { color: #2a7a5a; }
+.chat-input-row {
+  display: flex;
+  gap: 10px;
+  padding: 20px 24px;
+  border-top: 1px solid #e8e8e8;
+  flex-shrink: 0;
+}
+.chat-input {
+  flex: 1;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-family: var(--font);
+  font-size: 17px;
+  outline: none;
+  background: #f8f8f8;
+  color: var(--black);
+}
+.chat-input:focus { border-color: var(--green); background: white; }
+.chat-input::placeholder { color: #aaa; }
+.chat-send {
+  background: white;
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  flex-shrink: 0;
+  transition: background 0.12s;
+}
+.chat-send:hover { background: #f0f0f0; }
+
+/* ── RADAR SVG ── */
+.radar-svg text { font-family: 'Inter', sans-serif; }
+</style>
+</head>
+<body>
+<div class="app-wrap" id="appWrap">
+<div class="app-inner" id="appInner">
+
+<!-- ════════════════════════
+     S1: WELKOM
+════════════════════════ -->
+<div class="screen active" id="s1">
+  <div class="topbar"></div>
+  <div class="content">
+    <h1 class="welkom-title">Hoe duurzaam is jouw kantine?</h1>
+    <p class="welkom-sub">Beantwoord 6 korte vragen en ontdek jouw<br>persoonlijke voedselprofiel — volledig<br>gebaseerd op jouw situatie.</p>
+    <button class="btn-start-hier" onclick="goTo('s2')">
+      Start hier &nbsp;&nbsp;&nbsp; <span style="font-size:28px">→</span>
+    </button>
+  </div>
+  <div class="bottombar" style="justify-content:center;position:relative">
+    <div class="dots">
+      <span class="dot active"></span>
+      <span class="dot"></span><span class="dot"></span>
+      <span class="dot"></span><span class="dot"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     S2: VRAAG 1 — Gezondheid
+════════════════════════ -->
+<div class="screen" id="s2">
+  <div class="topbar"></div>
+  <div class="content">
+    <div class="prog-row">
+      <span class="prog-nr">1/6</span>
+      <span class="factor-pill">Gezondheid</span>
+    </div>
+    <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:17%"></div></div>
+    <div class="vraag-tekst">Hoe vaak biedt de kantine vegetarische gerechten aan?</div>
+    <div class="opts-2" id="opts-s2">
+      <button class="opt" onclick="pickOpt(this,'opts-s2')">Dagelijks</button>
+      <button class="opt" onclick="pickOpt(this,'opts-s2')">Meerdere keren p/w</button>
+      <button class="opt" onclick="pickOpt(this,'opts-s2')">Af en toe</button>
+      <button class="opt" onclick="pickOpt(this,'opts-s2')">Zelden / nooit</button>
+    </div>
+  </div>
+  <div class="bottombar" style="position:relative">
+    <div></div>
+    <div class="dots">
+      <span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </div>
+    <button class="btn-volgende" onclick="goTo('s3')">Volgende <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     S3: VRAAG 2 — Betaalbaarheid
+════════════════════════ -->
+<div class="screen" id="s3">
+  <div class="topbar"></div>
+  <div class="content">
+    <div class="prog-row">
+      <span class="prog-nr">2/6</span>
+      <span class="factor-pill">betaalbaarheid</span>
+    </div>
+    <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:33%"></div></div>
+    <div class="vraag-tekst">Hoe belangrijk is betaalbaarheid binnen jullie organisatie?</div>
+    <div class="slider-section">
+      <div class="slider-labels">
+        <span>Niet belangrijk</span>
+        <span>Belangrijk</span>
+      </div>
+      <input type="range" class="figma-slider" min="1" max="5" value="4"
+        oninput="document.getElementById('sv3').textContent=this.value+'/5 geselecteerd'">
+      <div class="slider-val" id="sv3">4/5 geselecteerd</div>
+    </div>
+  </div>
+  <div class="bottombar" style="position:relative">
+    <div></div>
+    <div class="dots">
+      <span class="dot done"></span><span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </div>
+    <button class="btn-volgende" onclick="goTo('s4')">Volgende <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     S4: VRAAG 3 — Eerlijke keten
+════════════════════════ -->
+<div class="screen" id="s4">
+  <div class="topbar"></div>
+  <div class="content">
+    <div class="prog-row">
+      <span class="prog-nr">3/6</span>
+      <span class="factor-pill">eerlijke keten</span>
+    </div>
+    <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:50%"></div></div>
+    <div class="vraag-tekst">Werken jullie met lokale of gecertificeerde leveranciers?</div>
+    <div class="opts-2" id="opts-s4">
+      <button class="opt" onclick="pickOpt(this,'opts-s4')">Ja, grotendeels</button>
+      <button class="opt selected" onclick="pickOpt(this,'opts-s4')">Gedeeltelijk</button>
+      <button class="opt" onclick="pickOpt(this,'opts-s4')">Nee / weet niet</button>
+      <button class="opt" onclick="pickOpt(this,'opts-s4')">We willen dit wel</button>
+    </div>
+  </div>
+  <div class="bottombar" style="position:relative">
+    <div></div>
+    <div class="dots">
+      <span class="dot done"></span><span class="dot done"></span><span class="dot active"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </div>
+    <button class="btn-volgende" onclick="goTo('s5')">Volgende <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     S5: VRAAG 4 — Verbruik / uitstoot
+════════════════════════ -->
+<div class="screen" id="s5">
+  <div class="topbar"></div>
+  <div class="content">
+    <div class="prog-row">
+      <span class="prog-nr">4/6</span>
+      <span class="factor-pill">Verbruik / uitstoot</span>
+    </div>
+    <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:67%"></div></div>
+    <div class="vraag-tekst">Hoeveel vleesgerechten worden er gemiddeld per dag aangeboden?</div>
+    <div class="opts-3" id="opts-s5">
+      <button class="opt" onclick="pickOpt(this,'opts-s5')">0 – 2</button>
+      <button class="opt" onclick="pickOpt(this,'opts-s5')">3 – 5</button>
+      <button class="opt selected" onclick="pickOpt(this,'opts-s5')">6+</button>
+    </div>
+  </div>
+  <div class="bottombar" style="position:relative">
+    <div></div>
+    <div class="dots">
+      <span class="dot done"></span><span class="dot done"></span><span class="dot done"></span><span class="dot active"></span><span class="dot"></span><span class="dot"></span>
+    </div>
+    <button class="btn-volgende" onclick="goTo('s6')">Volgende <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     S6: VRAAG 5 — Algemeen open vraag
+════════════════════════ -->
+<div class="screen" id="s6">
+  <div class="topbar"></div>
+  <div class="content">
+    <div class="prog-row">
+      <span class="prog-nr">5/6</span>
+      <span class="factor-pill">Algemeen</span>
+    </div>
+    <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:83%"></div></div>
+    <div class="vraag-tekst">Wat is momenteel de grootste uitdaging binnen het cateringaanbod?</div>
+    <textarea class="figma-textarea" placeholder="Bijv. te duur, weinig variatie, leverancierprobleem..."></textarea>
+  </div>
+  <div class="bottombar" style="position:relative">
+    <div></div>
+    <div class="dots">
+      <span class="dot done"></span><span class="dot done"></span><span class="dot done"></span><span class="dot done"></span><span class="dot active"></span><span class="dot"></span>
+    </div>
+    <button class="btn-volgende" onclick="goTo('s7')">Volgende <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     S7: VRAAG 6 — Verbruik herhaling
+════════════════════════ -->
+<div class="screen" id="s7">
+  <div class="topbar"></div>
+  <div class="content">
+    <div class="prog-row">
+      <span class="prog-nr">6/6</span>
+      <span class="factor-pill">Verbruik / uitstoot</span>
+    </div>
+    <div class="prog-bar-wrap"><div class="prog-bar-fill" style="width:100%"></div></div>
+    <div class="vraag-tekst">Hoeveel vleesgerechten worden er gemiddeld per dag aangeboden?</div>
+    <div class="opts-3" id="opts-s7">
+      <button class="opt" onclick="pickOpt(this,'opts-s7')">0 – 2</button>
+      <button class="opt" onclick="pickOpt(this,'opts-s7')">3 – 5</button>
+      <button class="opt selected" onclick="pickOpt(this,'opts-s7')">6+</button>
+    </div>
+  </div>
+  <div class="bottombar" style="position:relative">
+    <div></div>
+    <div class="dots">
+      <span class="dot done"></span><span class="dot done"></span><span class="dot done"></span><span class="dot done"></span><span class="dot done"></span><span class="dot active"></span>
+    </div>
+    <button class="btn-volgende" onclick="goTo('s8');startLoader()">Volgende <span class="arrow">→</span></button>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     S8: LOADER
+════════════════════════ -->
+<div class="screen" id="s8">
+  <div class="topbar"></div>
+  <div class="content" style="align-items:center;justify-content:center;padding:0 140px">
+    <div class="loader-spinner"></div>
+    <h2 class="loader-title">Jouw profiel wordt opgesteld...</h2>
+    <p class="loader-sub">We analyseren je antwoorden en stellen een persoonlijk voedselprofiel samen.</p>
+    <div class="loader-steps">
+      <div class="lstep done" id="ls1"><div class="lbox"></div>Antwoorden verwerkt</div>
+      <div class="lstep done" id="ls2"><div class="lbox"></div>Scores berekend per factor</div>
+      <div class="lstep active" id="ls3"><div class="lbox"></div>Profielnaam bepalen...</div>
+      <div class="lstep" id="ls4"><div class="lbox"></div>Radar chart genereren</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     S9: PROFIEL RESULTAAT
+════════════════════════ -->
+<div class="screen" id="s9">
+  <div class="topbar"></div>
+  <div class="content" style="padding:0 180px;justify-content:center">
+    <div class="profiel-card">
+      <div class="profiel-naam">De Verduurzamer</div>
+      <div class="profiel-desc">Sterke focus op biodiversiteit, uitstoot en eerlijke ketens</div>
+    </div>
+
+    <!-- Radar chart — 7 assen zoals Figma -->
+    <div style="display:flex;justify-content:center;margin-bottom:8px">
+      <svg viewBox="0 0 500 440" width="420" height="370" aria-label="Radar chart">
+        <!-- rings dashed -->
+        <polygon points="250,30 380,100 420,240 340,370 160,370 80,240 120,100" fill="none" stroke="#ddd" stroke-width="1" stroke-dasharray="4 4"/>
+        <polygon points="250,72 352,128 384,240 320,346 180,346 116,240 148,128" fill="none" stroke="#ddd" stroke-width="1" stroke-dasharray="4 4"/>
+        <polygon points="250,114 324,156 348,240 300,322 200,322 152,240 176,156" fill="none" stroke="#ddd" stroke-width="1" stroke-dasharray="4 4"/>
+        <polygon points="250,156 296,184 312,240 280,298 220,298 188,240 204,184" fill="none" stroke="#ddd" stroke-width="1" stroke-dasharray="4 4"/>
+        <polygon points="250,198 268,212 276,240 260,274 240,274 224,240 232,212" fill="none" stroke="#ddd" stroke-width="1" stroke-dasharray="4 4"/>
+        <!-- spokes -->
+        <line x1="250" y1="30" x2="250" y2="370" stroke="#ddd" stroke-width="1"/>
+        <line x1="250" y1="200" x2="380" y2="100" stroke="#ddd" stroke-width="1"/>
+        <line x1="250" y1="200" x2="420" y2="240" stroke="#ddd" stroke-width="1"/>
+        <line x1="250" y1="200" x2="340" y2="370" stroke="#ddd" stroke-width="1"/>
+        <line x1="250" y1="200" x2="160" y2="370" stroke="#ddd" stroke-width="1"/>
+        <line x1="250" y1="200" x2="80" y2="240" stroke="#ddd" stroke-width="1"/>
+        <line x1="250" y1="200" x2="120" y2="100" stroke="#ddd" stroke-width="1"/>
+        <!-- filled area (De Verduurzamer shape) -->
+        <polygon points="250,50 368,110 400,240 326,356 174,356 88,228 135,108"
+          fill="#a8d5c2" fill-opacity="0.6" stroke="#5aaa8a" stroke-width="2"/>
+        <!-- labels -->
+        <text x="250" y="18" text-anchor="middle" font-family="Inter,sans-serif" font-size="16" fill="#666">Gezondheid</text>
+        <text x="400" y="94" text-anchor="start" font-family="Inter,sans-serif" font-size="16" fill="#666">Bio</text>
+        <text x="435" y="248" text-anchor="start" font-family="Inter,sans-serif" font-size="16" fill="#666">Budget</text>
+        <text x="360" y="392" text-anchor="middle" font-family="Inter,sans-serif" font-size="16" fill="#666">Inclusief</text>
+        <text x="140" y="392" text-anchor="middle" font-family="Inter,sans-serif" font-size="16" fill="#666">Keten</text>
+        <text x="55" y="248" text-anchor="end" font-family="Inter,sans-serif" font-size="16" fill="#666">Uitstoot</text>
+        <text x="100" y="94" text-anchor="end" font-family="Inter,sans-serif" font-size="16" fill="#666">Verbruik</text>
+      </svg>
+    </div>
+
+    <p class="profiel-note">↑ uniek per organisatie — geen twee profielen zijn hetzelfde</p>
+    <div class="profiel-btns">
+      <button class="btn-naar-dash" onclick="goTo('s11')">Naar dashboard <span style="font-size:22px">→</span></button>
+      <button class="btn-opslaan">Profiel opslaan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════
+     S11: DASHBOARD
+════════════════════════ -->
+<div class="screen" id="s11">
+  <div style="background:var(--topbar);height:88px;flex-shrink:0;display:flex;align-items:center;padding:0 40px;">
+    <!-- lege topbar zoals Figma -->
+  </div>
+  <div class="dash-layout" style="flex:1;overflow:hidden">
+
+    <!-- KOLOM 1: AANBOD -->
+    <div class="dash-aanbod">
+      <div class="dash-col-title">Huidig aanbod</div>
+      <div class="filter-row">
+        <button class="ftab active" onclick="setFilter(this)">Alles</button>
+        <button class="ftab" onclick="setFilter(this)">Vegan</button>
+        <button class="ftab" onclick="setFilter(this)">Vlees</button>
+      </div>
+
+      <div class="dish-card red-card">
+        <div>
+          <div class="dish-name">Stamppot boerenkool</div>
+          <div class="dish-sub">
+            <span class="dish-dot" style="background:#e06060"></span>
+            Vlees - hoge uitstoot
+          </div>
+        </div>
+        <button class="dish-weg" onclick="removeDish(this)">weg</button>
+      </div>
+
+      <div class="dish-card green-card">
+        <div>
+          <div class="dish-name">Linzensoep</div>
+          <div class="dish-sub">
+            <span class="dish-dot" style="background:#5aaa82"></span>
+            Vegan · laag
+          </div>
+        </div>
+        <span class="dish-check">✓</span>
+      </div>
+
+      <div class="dish-card green-card">
+        <div>
+          <div class="dish-name">Quinoa salade</div>
+          <div class="dish-sub">
+            <span class="dish-dot" style="background:#5aaa82"></span>
+            Vegan · lokaal
+          </div>
+        </div>
+        <span class="dish-check">✓</span>
+      </div>
+
+      <button class="add-card">+ gerechten toevoegen</button>
+    </div>
+
+    <!-- KOLOM 2: PROFIEL -->
+    <div class="dash-profiel">
+      <div class="dash-col-title">Je profiel</div>
+      <div class="realtime-badge">
+        <span class="realtime-dot"></span> Realtime
+      </div>
+
+      <!-- Mini radar -->
+      <div style="display:flex;justify-content:center">
+        <svg viewBox="0 0 400 360" width="320" height="290">
+          <polygon points="200,22 304,82 336,200 272,308 128,308 64,200 96,82" fill="none" stroke="#ddd" stroke-width="1" stroke-dasharray="3 3"/>
+          <polygon points="200,58 278,104 304,200 256,282 144,282 96,200 122,104" fill="none" stroke="#ddd" stroke-width="1" stroke-dasharray="3 3"/>
+          <polygon points="200,94 252,126 272,200 240,256 160,256 128,200 148,126" fill="none" stroke="#ddd" stroke-width="1" stroke-dasharray="3 3"/>
+          <line x1="200" y1="22" x2="200" y2="308" stroke="#ddd" stroke-width="1"/>
+          <line x1="200" y1="165" x2="304" y2="82" stroke="#ddd" stroke-width="1"/>
+          <line x1="200" y1="165" x2="336" y2="200" stroke="#ddd" stroke-width="1"/>
+          <line x1="200" y1="165" x2="272" y2="308" stroke="#ddd" stroke-width="1"/>
+          <line x1="200" y1="165" x2="128" y2="308" stroke="#ddd" stroke-width="1"/>
+          <line x1="200" y1="165" x2="64" y2="200" stroke="#ddd" stroke-width="1"/>
+          <line x1="200" y1="165" x2="96" y2="82" stroke="#ddd" stroke-width="1"/>
+          <polygon points="200,38 294,90 318,200 262,296 138,296 72,188 108,90"
+            fill="#a8d5c2" fill-opacity="0.55" stroke="#5aaa8a" stroke-width="1.5"/>
+          <text x="200" y="14" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="#888">Gezondheid</text>
+          <text x="316" y="78" text-anchor="start" font-family="Inter,sans-serif" font-size="13" fill="#888">Bio</text>
+          <text x="348" y="208" text-anchor="start" font-family="Inter,sans-serif" font-size="13" fill="#888">Budget</text>
+          <text x="285" y="326" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="#888">Inclusief</text>
+          <text x="115" y="326" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="#888">Keten</text>
+          <text x="48" y="208" text-anchor="end" font-family="Inter,sans-serif" font-size="13" fill="#888">Uitstoot</text>
+          <text x="80" y="78" text-anchor="end" font-family="Inter,sans-serif" font-size="13" fill="#888">Verbruik</text>
+        </svg>
+      </div>
+
+      <div class="score-list">
+        <div class="score-row"><div class="score-lbl">Gezondheid</div><div class="score-bg"><div class="score-fill" style="width:60%"></div></div></div>
+        <div class="score-row"><div class="score-lbl">Bio</div><div class="score-bg"><div class="score-fill" style="width:82%"></div></div></div>
+        <div class="score-row"><div class="score-lbl">Budget</div><div class="score-bg"><div class="score-fill" style="width:38%"></div></div></div>
+        <div class="score-row"><div class="score-lbl">Keten</div><div class="score-bg"><div class="score-fill" style="width:76%"></div></div></div>
+        <div class="score-row"><div class="score-lbl">Uitstoot</div><div class="score-bg"><div class="score-fill" style="width:70%"></div></div></div>
+        <div class="score-row"><div class="score-lbl">Inclusief</div><div class="score-bg"><div class="score-fill" style="width:52%"></div></div></div>
+      </div>
+    </div>
+
+    <!-- KOLOM 3: CHATBOT -->
+    <div class="dash-chat">
+      <div class="chat-head">
+        <div class="chat-head-title">Chatbot</div>
+      </div>
+      <div class="chat-messages" id="chatMsgs">
+        <div class="cmsg bot">
+          <div class="cmsg-lbl">Chatbot</div>
+          Jouw betaalbaarheid (41) is laag. Wil je suggesties voor goedkopere plantaardige opties?
+        </div>
+        <div class="cmsg user">
+          <div class="cmsg-lbl">Jij</div>
+          Ja graag!
+        </div>
+        <div class="cmsg bot">
+          <div class="cmsg-lbl">Chatbot</div>
+          Probeer linzensoep te vervangen door een seizoensgroentesoep 30% goedkoper én lokaal.
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chatIn" placeholder="Stel een vraag..."
+          onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="chat-send" onclick="sendChat()">→</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</div><!-- app-inner -->
+</div><!-- app-wrap -->
+
+<script>
+// ── SCHALEN ──
+function scale() {
+  const wrap = document.getElementById('appWrap');
+  const inner = document.getElementById('appInner');
+  const sw = wrap.offsetWidth;
+  const sh = wrap.offsetHeight;
+  const s = Math.min(sw / 1366, sh / 1000);
+  inner.style.transform = `scale(${s})`;
+  inner.style.width = '1366px';
+  inner.style.height = '1000px';
+}
+scale();
+window.addEventListener('resize', scale);
+
+// ── NAVIGATIE ──
+let current = 's1';
+const history = ['s1'];
+
+function goTo(id) {
+  if (id === current) return;
+  document.getElementById(current).classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  history.push(id);
+  current = id;
+}
+
+// ── OPTIES ──
+function pickOpt(btn, groupId) {
+  document.getElementById(groupId).querySelectorAll('.opt').forEach(o => o.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+
+// ── FILTER TABS ──
+function setFilter(tab) {
+  tab.closest('.filter-row').querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+}
+
+// ── GERECHT VERWIJDEREN ──
+function removeDish(btn) {
+  btn.closest('.dish-card').remove();
+}
+
+// ── LOADER ──
+function startLoader() {
+  const steps = ['ls1','ls2','ls3','ls4'];
+  steps.forEach(id => {
+    const el = document.getElementById(id);
+    el.classList.remove('done','active');
+    el.querySelector('.lbox').textContent = '';
+  });
+  document.getElementById('ls1').classList.add('active');
+  let i = 0;
+  const tick = () => {
+    const el = document.getElementById(steps[i]);
+    el.classList.remove('active');
+    el.classList.add('done');
+    el.querySelector('.lbox').innerHTML = '';
+    i++;
+    if (i < steps.length) {
+      document.getElementById(steps[i]).classList.add('active');
+      setTimeout(tick, 700);
+    } else {
+      setTimeout(() => goTo('s9'), 400);
+    }
+  };
+  setTimeout(tick, 600);
+}
+
+// ── CHAT ──
+const replies = [
+  'Op basis van jouw profiel adviseer ik meer seizoensgroenten.',
+  'Je biodiversiteitsscore is al sterk — goed bezig!',
+  'Overweeg een "groene dag" per week met alleen plantaardige gerechten.',
+  'Linzengerechten zijn goedkoper én duurzamer dan vlees.',
+  'Lokale leveranciers verbeteren zowel eerlijke keten als betaalbaarheid.',
+];
+let ri = 0;
+function sendChat() {
+  const input = document.getElementById('chatIn');
+  const msgs = document.getElementById('chatMsgs');
+  const val = input.value.trim();
+  if (!val) return;
+  const u = document.createElement('div');
+  u.className = 'cmsg user';
+  u.innerHTML = `<div class="cmsg-lbl">Jij</div>${val}`;
+  msgs.appendChild(u);
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+  setTimeout(() => {
+    const b = document.createElement('div');
+    b.className = 'cmsg bot';
+    b.innerHTML = `<div class="cmsg-lbl">Chatbot</div>${replies[ri++ % replies.length]}`;
+    msgs.appendChild(b);
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 600);
+}
+</script>
+</body>
+</html>
